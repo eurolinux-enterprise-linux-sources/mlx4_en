@@ -1,8 +1,9 @@
 %define kmod_name		mlx4_en
-%define kmod_driver_version	2.0.32.269
+%define kmod_driver_version	2.1_rh1
 %define kmod_rpm_release	1
-%define kmod_git_hash		dd52e652037730a568725fc48fd47d685d969212
-%define kmod_kernel_version	2.6.32-220.el6
+%define kmod_git_hash		7015216b7da8c1eb2a271ab6ef8dc73cc86c05a0
+%define kmod_kernel_version	2.6.32-431.el6
+%define kernel_version		2.6.32-431.el6
 %define kmod_kbuild_dir		drivers/net/mlx4/
 
 
@@ -14,10 +15,8 @@ Source2:	depmodconf
 Source3:	find-requires.ksyms			
 Source4:	find-provides.ksyms			
 Source5:	kmodtool			
-Source6:	Module.symvers-i686			
-Source7:	Module.symvers-x86_64			
-Source8:	symbols.greylist-i686			
-Source9:	symbols.greylist-x86_64			
+Source6:	symbols.greylist-i686			
+Source7:	symbols.greylist-x86_64			
 
 Patch0:		mlx4_en.patch
 
@@ -52,8 +51,6 @@ mkdir source
 mv "$@" source/
 cp %{SOURCE6} source/
 cp %{SOURCE7} source/
-cp %{SOURCE8} source/
-cp %{SOURCE9} source/
 mkdir obj
 
 %build
@@ -69,6 +66,9 @@ for flavor in %flavors_to_build; do
 
 	make -C %{kernel_source $flavor} M=$PWD/obj/$flavor/%{kmod_kbuild_dir} \
 		NOSTDINC_FLAGS="-I $PWD/obj/$flavor/include"
+
+	# mark modules executable so that strip-to-file can strip them
+	find obj/$flavor/%{kmod_kbuild_dir} -name "*.ko" -type f -exec chmod u+x '{}' +
 done
 
 %{SOURCE2} %{name} %{kmod_kernel_version} obj > source/depmod.conf
@@ -98,12 +98,12 @@ install -m 644 -D source/depmod.conf $RPM_BUILD_ROOT/etc/depmod.d/%{kmod_name}.c
 install -m 644 -D source/symbols.greylist $RPM_BUILD_ROOT/usr/share/doc/kmod-%{kmod_name}/greylist.txt
 
 if [ -d source/firmware ]; then
-	make -C source/firmware INSTALL_PATH=$RPM_BUILD_ROOT INSTALL_DIR= install
+	make -C source/firmware INSTALL_PATH=$RPM_BUILD_ROOT INSTALL_DIR=updates install
 fi
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %changelog
-* Wed May 09 2012 Jiri Benc <jbenc@redhat.com> 2.0.32.269 1
+* Mon Oct 13 2014 Weiping Pan <wpan@redhat.com> 2.1_rh1 1
 - mlx4_en DUP module
